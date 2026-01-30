@@ -14,7 +14,11 @@ RUN npm ci
 COPY . .
 
 # Build the Angular application
-RUN npx ng build
+RUN npx ng build --configuration=production
+
+# Debug: Show what's in dist directory
+RUN ls -la /app/dist/ || echo "No dist directory found"
+RUN ls -la /app/ | grep dist || echo "No dist found in app root"
 
 # Production stage
 FROM nginx:alpine
