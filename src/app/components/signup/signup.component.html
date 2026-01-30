@@ -1,0 +1,64 @@
+<div class="signup-container">
+  <div class="signup-card">
+    <div class="signup-header">
+      <h2>Create Account</h2>
+      <p>Sign up to get started</p>
+    </div>
+
+    <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="signup-form">
+      <!-- Success Message -->
+      <div *ngIf="successMessage" class="alert alert-success">
+        {{ successMessage }}
+      </div>
+
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="alert alert-error">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Name Field -->
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input id="name" type="text" formControlName="name" class="form-control" placeholder="Enter your full name"
+          [class.is-invalid]="f['name'].invalid && f['name'].touched" />
+        <div *ngIf="f['name'].invalid && f['name'].touched" class="invalid-feedback">
+          <div *ngIf="f['name'].errors?.['required']">Name is required</div>
+          <div *ngIf="f['name'].errors?.['minlength']">Name must be at least 2 characters</div>
+        </div>
+      </div>
+
+      <!-- Email Field -->
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input id="email" type="email" formControlName="email" class="form-control" placeholder="Enter your email"
+          [class.is-invalid]="f['email'].invalid && f['email'].touched" />
+        <div *ngIf="f['email'].invalid && f['email'].touched" class="invalid-feedback">
+          <div *ngIf="f['email'].errors?.['required']">Email is required</div>
+          <div *ngIf="f['email'].errors?.['email']">Please enter a valid email</div>
+        </div>
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" type="password" formControlName="password" class="form-control"
+          placeholder="Enter your password" [class.is-invalid]="f['password'].invalid && f['password'].touched" />
+        <div *ngIf="f['password'].invalid && f['password'].touched" class="invalid-feedback">
+          <div *ngIf="f['password'].errors?.['required']">Password is required</div>
+          <div *ngIf="f['password'].errors?.['minlength']">Password must be at least 3 characters</div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="btn btn-primary btn-block" [disabled]="signupForm.invalid || isLoading">
+        <span *ngIf="!isLoading">Sign Up</span>
+        <span *ngIf="isLoading" class="spinner"></span>
+        <span *ngIf="isLoading">Creating account...</span>
+      </button>
+    </form>
+
+    <div class="signup-footer">
+      <p>Already have an account? <a routerLink="/login">Sign In</a></p>
+    </div>
+  </div>
+</div>

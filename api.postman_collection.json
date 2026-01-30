@@ -1,0 +1,97 @@
+{
+  "info": {
+    "_postman_id": "6f388159-cbd0-4722-9302-ed23f580efcd",
+    "name": "api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "13902682"
+  },
+  "item": [
+    {
+      "name": "singup",
+      "request": {
+        "auth": {
+          "type": "bearer"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"name\":\"Cloudwings\",\r\n    \"email\":\"info.cloudwings@gmail.com\",\r\n    \"password\":\"123\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/auth/signup",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "auth",
+            "signup"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "login",
+      "request": {
+        "auth": {
+          "type": "bearer"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"name\":\"Cloudwings\",\r\n    \"email\":\"info.cloudwings@gmail.com\",\r\n    \"password\":\"123\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{BASE_URL}}/auth/login",
+          "host": [
+            "{{BASE_URL}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "user",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5NzI0NDk4OWJlYjY2NDRkYjBmNzhlYSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzY5MDk3NjI0LCJleHAiOjE3NjkxODQwMjR9.ciOramqpQUVy2XCepdcQfhWcbHthJzndxOEJa68_plU",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "${{BASE_URL}}}/user",
+          "host": [
+            "${{BASE_URL}}}"
+          ],
+          "path": [
+            "user"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
