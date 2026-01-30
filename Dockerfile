@@ -20,7 +20,7 @@ RUN npx ng build
 FROM nginx:alpine
 
 # Copy built Angular app to nginx
-COPY --from=build /app/dist/facebook /usr/share/nginx/html
+COPY --from=build /app/dist/blogger-frontend /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
