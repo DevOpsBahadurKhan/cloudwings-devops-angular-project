@@ -29,7 +29,7 @@ FROM nginx:alpine
 RUN rm -rf /usr/share/nginx/html/*
 
 # Copy Angular build output
-COPY --from=build /app/dist/blogger-frontend/ /usr/share/nginx/html/
+COPY --from=build /app/dist/blogger-frontend/browser/ /usr/share/nginx/html/
 
 # Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
