@@ -1,36 +1,39 @@
-# Use the official Node.js runtime as a parent image
+# -----------------------------
+# Build stage
+# -----------------------------
 FROM node:20-alpine AS build
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Install Angular CLI
+RUN npm install -g @angular/cli
+
+# Copy dependency files
 COPY package*.json ./
 
-# Install all dependencies (including dev dependencies for build)
+# Install dependencies
 RUN npm ci
 
-# Copy the rest of the application code
+# Copy source code
 COPY . .
 
-# Build the Angular application
-RUN npx ng build --configuration=production
+# Build Angular app
+RUN ng build --configuration production
 
-# Debug: Show what's in dist directory
-RUN ls -la /app/dist/ || echo "No dist directory found"
-RUN ls -la /app/ | grep dist || echo "No dist found in app root"
-
+# -----------------------------
 # Production stage
+# -----------------------------
 FROM nginx:alpine
 
-# Copy built Angular app to nginx
-COPY --from=build /app/dist/blogger-frontend /usr/share/nginx/html
+# Remove default nginx files
+RUN rm -rf /usr/share/nginx/html/*
 
-# Copy nginx configuration
+# Copy Angular build output
+COPY --from=build /app/dist/ /usr/share/nginx/html/
+
+# Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 80
 EXPOSE 80
 
-# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
