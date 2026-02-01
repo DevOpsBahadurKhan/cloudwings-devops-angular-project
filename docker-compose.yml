@@ -7,9 +7,11 @@ services:
     environment:
       - NODE_ENV=production
     restart: unless-stopped
+    ports:
+      - "4200:80"
     networks:
       - my_network
 
 networks:
   my_network:
-    driver: bridge
+    external: true
