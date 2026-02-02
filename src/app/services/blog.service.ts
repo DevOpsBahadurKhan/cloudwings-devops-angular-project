@@ -73,9 +73,9 @@ export class BlogService {
     return this.http.post<Blog>(`${this.baseUrl}/blog`, blog);
   }
 
-  // PUT /blog/:id
+  // PATCH /blog/:id
   updateBlog(id: string, blog: Partial<Blog>): Observable<Blog> {
-    return this.http.put<any>(`${this.baseUrl}/blog/${id}`, blog).pipe(
+    return this.http.patch<any>(`${this.baseUrl}/blog/${id}`, blog).pipe(
       map(response => {
         // Extract blog data from wrapped response
         if (response && response.success && response.data) {

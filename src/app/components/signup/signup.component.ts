@@ -167,12 +167,8 @@ export class SignupComponent {
 
     this.authService.signup({ name, email, password }).subscribe({
       next: (response) => {
-        console.log('Signup response:', response);
-
         // Subscribe to get the current user state
         this.authService.currentUser$.subscribe(user => {
-          console.log('Current user after signup:', user);
-
           // If no user data in response, store it manually
           if (!user || !user.name) {
             const userData = {
@@ -180,7 +176,6 @@ export class SignupComponent {
               name: name,
               email: email
             };
-            console.log('Storing user data manually:', userData);
             this.authService.setUser(userData);
           }
         });
@@ -193,7 +188,6 @@ export class SignupComponent {
         }, 2000);
       },
       error: (error) => {
-        console.error('Signup error:', error);
         this.errorMessage = error.error?.message || 'Registration failed. Please try again.';
         this.isLoading = false;
       },

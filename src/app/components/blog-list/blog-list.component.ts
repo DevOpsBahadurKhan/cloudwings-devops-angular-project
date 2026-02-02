@@ -145,6 +145,7 @@ export class BlogListComponent implements OnInit {
       error: (err) => {
         this.error = 'Failed to load blogs';
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
