@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-cloudwings
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+      color: blue
+  template:
+    metadata:
+      labels:
+        app: frontend
+        color: blue
+    spec:
+      containers:
+        - name: frontend
+          image: 562100/angular-app
+          ports:
+          - containerPort: 80
