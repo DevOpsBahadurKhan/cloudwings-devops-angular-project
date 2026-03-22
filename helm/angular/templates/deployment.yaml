@@ -3,19 +3,17 @@ kind: Deployment
 metadata:
   name: frontend-cloudwings
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: frontend
-      color: blue
   template:
     metadata:
       labels:
         app: frontend
-        color: blue
     spec:
       containers:
         - name: frontend
-          image: 562100/angular-app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
           - containerPort: 80

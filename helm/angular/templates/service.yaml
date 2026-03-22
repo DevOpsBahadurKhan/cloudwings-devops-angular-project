@@ -3,11 +3,10 @@ kind: Service
 metadata:
   name: cloudwings
 spec:
-  type: NodePort
+  type: {{ .Values.service.type }}
   selector:
     app: frontend
-    color: blue
   ports:
-    - port: 80
+    - port: {{ .Values.service.port }}
       targetPort: 80
-      nodePort: 30070
+      nodePort: {{ .Values.service.nodePort }}

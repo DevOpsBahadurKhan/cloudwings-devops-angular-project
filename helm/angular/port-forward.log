@@ -1,0 +1,9 @@
+nohup: ignoring input
+Forwarding from 0.0.0.0:8081 -> 8080
+Handling connection for 8081
+Handling connection for 8081
+Handling connection for 8081
+E0322 10:46:48.424943   15033 portforward.go:409] an error occurred forwarding 8081 -> 8080: error forwarding port 8080 to pod 67a0c98172aa55b662180bc1d0902d178a484e40de68c2ec7409669d7223da7b, uid : failed to execute portforward in network namespace "/var/run/netns/cni-23ca5127-ef40-955c-9bbb-c449ba5607ea": failed to connect to localhost:8080 inside namespace "67a0c98172aa55b662180bc1d0902d178a484e40de68c2ec7409669d7223da7b", IPv4: dial tcp4 127.0.0.1:8080: connect: connection refused IPv6 dial tcp6 [::1]:8080: connect: connection refused 
+E0322 10:46:48.425411   15033 portforward.go:409] an error occurred forwarding 8081 -> 8080: error forwarding port 8080 to pod 67a0c98172aa55b662180bc1d0902d178a484e40de68c2ec7409669d7223da7b, uid : failed to execute portforward in network namespace "/var/run/netns/cni-23ca5127-ef40-955c-9bbb-c449ba5607ea": failed to connect to localhost:8080 inside namespace "67a0c98172aa55b662180bc1d0902d178a484e40de68c2ec7409669d7223da7b", IPv4: dial tcp4 127.0.0.1:8080: connect: connection refused IPv6 dial tcp6 [::1]:8080: connect: connection refused 
+E0322 10:46:48.484449   15033 portforward.go:394] error copying from local connection to remote stream: EOF
+error: lost connection to pod
