@@ -1,0 +1,205 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = "angular-app"
+        DOCKERHUB_USER = "562100"
+        IMAGE_NAME = "${DOCKERHUB_USER}/${APP_NAME}"
+    }
+
+    stages {
+
+        // 🔥 Clean
+        stage('Clean Workspace') {
+            steps {
+                deleteDir()
+            }
+        }
+
+        // 📥 Checkout
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/DevOpsBahadurKhan/cloudwings-devops-angular-project.git'
+            }
+        }
+
+        // 📦 Install
+        stage('Install Dependencies') {
+            agent {
+                docker {
+                    image 'node:20'
+                    reuseNode true
+                    args '-u root'
+                }
+            }
+            steps {
+                sh 'npm install'
+            }
+        }
+
+        // 🏗️ Build Angular
+        stage('Build Angular App') {
+            agent {
+                docker {
+                    image 'node:20'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh 'npm run build'
+            }
+        }
+
+        // 📊 SonarQube
+        stage('SonarQube Analysis') {
+            environment {
+                scannerHome = tool 'sonar'
+            }
+            steps {
+                withSonarQubeEnv('sonar') {
+                    sh '''
+                    $scannerHome/bin/sonar-scanner \
+                    -Dsonar.projectKey=blogger-frontend \
+                    -Dsonar.sources=.
+                    '''
+                }
+            }
+        }
+
+        // 🐳 Docker Build
+        stage('Docker Build') {
+            agent {
+                docker {
+                    image 'docker:latest'
+                    args '--entrypoint="" -u root -v /var/run/docker.sock:/var/run/docker.sock'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh 'docker build -t $APP_NAME:latest .'
+            }
+        }
+
+        // 🛡️ Trivy Scan
+        stage('Trivy Image Scan') {
+            agent {
+                docker {
+                    image 'aquasec/trivy:latest'
+                    args '--entrypoint="" -u root -v /var/run/docker.sock:/var/run/docker.sock'
+                }
+            }
+            steps {
+                sh '''
+                mkdir -p reports
+
+                trivy image \
+                --format table \
+                --output reports/trivy-report.txt \
+                $APP_NAME:latest
+                '''
+            }
+        }
+
+        // 🚀 Push to Docker Hub (FIXED 🔥)
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-creds') {
+                        sh '''
+                        # ✅ tag with BUILD_NUMBER
+                        docker tag $APP_NAME:latest $IMAGE_NAME:${BUILD_NUMBER}
+
+                        # ✅ optional latest tag
+                        docker tag $APP_NAME:latest $IMAGE_NAME:latest
+
+                        # 🚀 push both
+                        docker push $IMAGE_NAME:${BUILD_NUMBER}
+                        docker push $IMAGE_NAME:latest
+                        '''
+                    }
+                }
+            }
+        }
+
+        // 🔁 GitOps Update (FIXED 🔥)
+        stage('Update Helm Values (GitOps)') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'github-token',
+                        usernameVariable: 'GIT_USER',
+                        passwordVariable: 'GIT_PASS'
+                    )]) {
+
+                        sh '''
+                        git config user.email "jenkins@cloud.com"
+                        git config user.name "jenkins"
+
+                        # ✅ always pull first
+                        git pull origin main --rebase
+
+                        # 🔄 update tag
+                        sed -i "s|tag:.*|tag: ${BUILD_NUMBER}|g" helm/angular/values.yaml
+
+                        git add helm/angular/values.yaml
+
+                        # ✅ commit only if changes exist
+                        git diff --cached --quiet || git commit -m "🚀 Update image tag to ${BUILD_NUMBER}"
+
+                        # 🚀 push with auth
+                        git push https://${GIT_USER}:${GIT_PASS}@github.com/DevOpsBahadurKhan/cloudwings-devops-angular-project.git main
+                        '''
+                    }
+                }
+            }
+        }
+    }
+
+    // 🔔 Notifications
+    post {
+
+        success {
+            slackSend(
+                channel: "#build-notification",
+                color: 'good',
+                message: """
+🚀 *CI/CD Pipeline Completed Successfully*
+
+📦 Project: ${env.JOB_NAME}
+🔢 Build: #${env.BUILD_NUMBER}
+
+🐳 Docker Image: ${IMAGE_NAME}:${env.BUILD_NUMBER}
+☸️ Deployment: Auto via ArgoCD
+
+🌐 App URL: http://localhost:3001
+"""
+            )
+
+            // ⚠️ safe upload (no failure if missing)
+            script {
+                if (fileExists("reports/trivy-report.txt")) {
+                    slackUploadFile(
+                        channel: "#build-notification",
+                        filePath: "reports/trivy-report.txt",
+                        initialComment: "🛡️ Trivy Security Report"
+                    )
+                }
+            }
+        }
+
+        failure {
+            slackSend(
+                channel: "#build-notification",
+                color: 'danger',
+                message: """
+❌ *Pipeline FAILED*
+
+📦 Project: ${env.JOB_NAME}
+🔢 Build: #${env.BUILD_NUMBER}
+
+👉 Check Jenkins logs
+"""
+            )
+        }
+    }
+}
