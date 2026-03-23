@@ -74,9 +74,10 @@ jobs:
       run: |
         docker push $IMAGE_NAME:${{ github.run_number }}
         docker push $IMAGE_NAME:latest
+        
     # 🛡️ Trivy Scan (GitHub Action way)
     - name: Run Trivy Scan
-      uses: aquasecurity/trivy-action@0.20.0
+      uses: aquasecurity/trivy-action@0.14.0
       with:
         image-ref: ${{ env.APP_NAME }}:latest
         format: table
