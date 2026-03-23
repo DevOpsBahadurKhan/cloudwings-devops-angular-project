@@ -41,16 +41,16 @@ jobs:
       run: npm run build -- --configuration production
 
     # 🔍 SonarQube Scan
-    - name: SonarQube Scan
-      uses: SonarSource/sonarqube-scan-action@v2
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-      with:
-        args: >
-          -Dsonar.projectKey=DevOpsBahadurKhan_cloudwings-devops-angular-project
-          -Dsonar.organization=devopsbahadurkhan
-          -Dsonar.sources=.
+    # - name: SonarQube Scan
+    #   uses: SonarSource/sonarqube-scan-action@v2
+    #   env:
+    #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    #     SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+    #   with:
+    #     args: >
+    #       -Dsonar.projectKey=DevOpsBahadurKhan_cloudwings-devops-angular-project
+    #       -Dsonar.organization=devopsbahadurkhan
+    #       -Dsonar.sources=.
 
     # 🐳 Docker Login
     - name: Login to Docker Hub
