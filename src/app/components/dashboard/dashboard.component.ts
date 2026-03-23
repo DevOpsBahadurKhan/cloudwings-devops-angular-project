@@ -16,7 +16,7 @@ import { BlogService, Blog } from '../../services/blog.service';
           <div class="flex justify-between items-center">
             <div class="flex items-center gap-3">
               <div class="w-3 h-3 bg-primary-500 rounded-full animate-pulse"></div>
-              <h1 class="text-2xl font-bold text-gray-900">🚀 Cloudwings Technology</h1>
+              <h1 class="text-2xl font-bold text-gray-900">Cloudwings Technology</h1>
             </div>
             <div class="flex items-center gap-4">
               <span class="text-gray-600">
