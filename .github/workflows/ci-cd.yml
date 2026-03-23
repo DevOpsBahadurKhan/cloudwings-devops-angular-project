@@ -74,17 +74,13 @@ jobs:
       run: |
         docker push $IMAGE_NAME:${{ github.run_number }}
         docker push $IMAGE_NAME:latest
-
-    # 🛡️ Trivy Scan
+    # 🛡️ Trivy Scan (GitHub Action way)
     - name: Run Trivy Scan
-      run: |
-        mkdir -p reports
-        docker run --rm \
-          -v /var/run/docker.sock:/var/run/docker.sock \
-          aquasec/trivy:latest image \
-          --format table \
-          --output reports/trivy-report.txt \
-          $APP_NAME:latest
+      uses: aquasecurity/trivy-action@0.20.0
+      with:
+        image-ref: ${{ env.APP_NAME }}:latest
+        format: table
+        output: trivy-report.txt
 
     # 📊 Upload Security Report
     - name: Upload Trivy Report
@@ -92,7 +88,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: trivy-report
-        path: reports/trivy-report.txt
+        path: trivy-report.txt
 
     # 🔁 GitOps Update (Helm)
     - name: Configure Git
