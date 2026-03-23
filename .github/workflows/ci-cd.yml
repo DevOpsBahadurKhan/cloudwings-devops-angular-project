@@ -2,7 +2,7 @@ name: Angular CI-CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -18,109 +18,108 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 📥 Checkout
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    # 📥 Checkout
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      # ⚙️ Setup Node
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
-    # ⚙️ Setup Node
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: npm
+      # 📦 Install dependencies
+      - name: Install dependencies
+        run: npm ci
 
-    # 📦 Install dependencies
-    - name: Install dependencies
-      run: npm ci
+      # 🏗️ Build Angular App
+      - name: Build Angular app
+        run: npm run build -- --configuration production
 
-    # 🏗️ Build Angular App
-    - name: Build Angular app
-      run: npm run build -- --configuration production
+      # 🔍 SonarQube Scan
+      # - name: SonarQube Scan
+      #   uses: SonarSource/sonarqube-scan-action@v2
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      #     SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      #   with:
+      #     args: >
+      #       -Dsonar.projectKey=DevOpsBahadurKhan_cloudwings-devops-angular-project
+      #       -Dsonar.organization=devopsbahadurkhan
+      #       -Dsonar.sources=.
 
-    # 🔍 SonarQube Scan
-    # - name: SonarQube Scan
-    #   uses: SonarSource/sonarqube-scan-action@v2
-    #   env:
-    #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    #     SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-    #   with:
-    #     args: >
-    #       -Dsonar.projectKey=DevOpsBahadurKhan_cloudwings-devops-angular-project
-    #       -Dsonar.organization=devopsbahadurkhan
-    #       -Dsonar.sources=.
+      # 🐳 Docker Login
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # 🐳 Docker Login
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      # 🐳 Build Docker Image
+      - name: Build Docker image
+        run: docker build -t $APP_NAME:latest .
 
-    # 🐳 Build Docker Image
-    - name: Build Docker image
-      run: docker build -t $APP_NAME:latest .
+      # 🏷️ Tag Image
+      - name: Tag Docker image
+        run: |
+          docker tag $APP_NAME:latest $IMAGE_NAME:${{ github.run_number }}
+          docker tag $APP_NAME:latest $IMAGE_NAME:latest
 
-    # 🏷️ Tag Image
-    - name: Tag Docker image
-      run: |
-        docker tag $APP_NAME:latest $IMAGE_NAME:${{ github.run_number }}
-        docker tag $APP_NAME:latest $IMAGE_NAME:latest
+      # 🚀 Push Image
+      - name: Push Docker image
+        run: |
+          docker push $IMAGE_NAME:${{ github.run_number }}
+          docker push $IMAGE_NAME:latest
 
-    # 🚀 Push Image
-    - name: Push Docker image
-      run: |
-        docker push $IMAGE_NAME:${{ github.run_number }}
-        docker push $IMAGE_NAME:latest
+      # 🛡️ Trivy Scan (GitHub Action way)
+      - name: Run Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.APP_NAME }}:latest
+          format: table
+          output: trivy-report.txt
 
-    # 🛡️ Trivy Scan (GitHub Action way)
-    - name: Run Trivy Scan
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: ${{ env.APP_NAME }}:latest
-        format: table
-        output: trivy-report.txt
+      # 📊 Upload Security Report
+      - name: Upload Trivy Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.txt
 
-    # 📊 Upload Security Report
-    - name: Upload Trivy Report
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: trivy-report
-        path: trivy-report.txt
+      # 🔁 GitOps Update (Helm)
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
 
-    # 🔁 GitOps Update (Helm)
-    - name: Configure Git
-      run: |
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
+      - name: Update Helm values
+        run: |
+          sed -i "s|tag:.*|tag: ${{ github.run_number }}|g" helm/angular/values.yaml
 
-    - name: Update Helm values
-      run: |
-        sed -i "s|tag:.*|tag: ${{ github.run_number }}|g" helm/angular/values.yaml
+      - name: Commit changes
+        run: |
+          git add helm/angular/values.yaml
+          git diff --cached --quiet || git commit -m "🚀 Update image tag ${{ github.run_number }}"
 
-    - name: Commit changes
-      run: |
-        git add helm/angular/values.yaml
-        git diff --cached --quiet || git commit -m "🚀 Update image tag ${{ github.run_number }}"
+      - name: Push changes
+        run: git push
 
-    - name: Push changes
-      run: git push
+      # 📢 Slack Success
+      - name: Slack Success Notification
+        if: success()
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\":\"🚀 SUCCESS: Angular CI-CD Pipeline\nBuild #${{ github.run_number }}\"}" \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
 
-    # 📢 Slack Success
-    - name: Slack Success Notification
-      if: success()
-      run: |
-        curl -X POST -H 'Content-type: application/json' \
-        --data "{\"text\":\"🚀 SUCCESS: Angular CI-CD Pipeline\nBuild #${{ github.run_number }}\"}" \
-        ${{ secrets.SLACK_WEBHOOK_URL }}
-
-    # ❌ Slack Failure
-    - name: Slack Failure Notification
-      if: failure()
-      run: |
-        curl -X POST -H 'Content-type: application/json' \
-        --data "{\"text\":\"❌ FAILED: Angular CI-CD Pipeline\nBuild #${{ github.run_number }}\"}" \
-        ${{ secrets.SLACK_WEBHOOK_URL }}
+      # ❌ Slack Failure
+      - name: Slack Failure Notification
+        if: failure()
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\":\"❌ FAILED: Angular CI-CD Pipeline\nBuild #${{ github.run_number }}\"}" \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
