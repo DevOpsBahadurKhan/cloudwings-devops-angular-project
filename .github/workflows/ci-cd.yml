@@ -1,80 +1,128 @@
-name: CI/CD Pipeline
+name: Angular CI-CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  APP_NAME: angular-app
+  DOCKER_USER: 562100
+  IMAGE_NAME: 562100/angular-app
 
 jobs:
-  test:
+  build-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
+
+    # 📥 Checkout
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # ⚙️ Setup Node
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: facebook/package-lock.json
-    
-    - name: Install dependencies
-      working-directory: ./facebook
-      run: npm ci
-    
-    - name: Run tests
-      working-directory: ./facebook
-      run: npm test -- --watch=false --browsers=ChromeHeadless
-    
-    - name: Build application
-      working-directory: ./facebook
-      run: npm run build
+        node-version: 20
+        cache: npm
 
-  build-and-deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
+    # 📦 Install dependencies
+    - name: Install dependencies
+      run: npm ci
+
+    # 🏗️ Build Angular App
+    - name: Build Angular app
+      run: npm run build -- --configuration production
+
+    # 🔍 SonarQube Scan
+    - name: SonarQube Scan
+      uses: SonarSource/sonarqube-scan-action@v2
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      with:
+        args: >
+          -Dsonar.projectKey=blogger-frontend
+          -Dsonar.sources=.
+
+    # 🐳 Docker Login
     - name: Login to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-    
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./facebook
-        file: ./facebook/Dockerfile
-        push: true
-        tags: |
-          ${{ secrets.DOCKER_USERNAME }}/blogger-frontend:latest
-          ${{ secrets.DOCKER_USERNAME }}/blogger-frontend:${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
 
-  deploy:
-    needs: build-and-deploy
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: Deploy to production
-      uses: appleboy/ssh-action@v1.0.0
+    # 🐳 Build Docker Image
+    - name: Build Docker image
+      run: docker build -t $APP_NAME:latest .
+
+    # 🏷️ Tag Image
+    - name: Tag Docker image
+      run: |
+        docker tag $APP_NAME:latest $IMAGE_NAME:${{ github.run_number }}
+        docker tag $APP_NAME:latest $IMAGE_NAME:latest
+
+    # 🚀 Push Image
+    - name: Push Docker image
+      run: |
+        docker push $IMAGE_NAME:${{ github.run_number }}
+        docker push $IMAGE_NAME:latest
+
+    # 🛡️ Trivy Scan
+    - name: Run Trivy Scan
+      run: |
+        mkdir -p reports
+        docker run --rm \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          aquasec/trivy:latest image \
+          --format table \
+          --output reports/trivy-report.txt \
+          $APP_NAME:latest
+
+    # 📊 Upload Security Report
+    - name: Upload Trivy Report
+      if: always()
+      uses: actions/upload-artifact@v4
       with:
-        host: ${{ secrets.PROD_HOST }}
-        username: ${{ secrets.PROD_USER }}
-        key: ${{ secrets.PROD_SSH_KEY }}
-        script: |
-          cd /opt/blogger-frontend
-          docker-compose pull
-          docker-compose up -d
-          docker system prune -f
+        name: trivy-report
+        path: reports/trivy-report.txt
+
+    # 🔁 GitOps Update (Helm)
+    - name: Configure Git
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+
+    - name: Update Helm values
+      run: |
+        sed -i "s|tag:.*|tag: ${{ github.run_number }}|g" helm/angular/values.yaml
+
+    - name: Commit changes
+      run: |
+        git add helm/angular/values.yaml
+        git diff --cached --quiet || git commit -m "🚀 Update image tag ${{ github.run_number }}"
+
+    - name: Push changes
+      run: git push
+
+    # 📢 Slack Success
+    - name: Slack Success Notification
+      if: success()
+      run: |
+        curl -X POST -H 'Content-type: application/json' \
+        --data "{\"text\":\"🚀 SUCCESS: Angular CI-CD Pipeline\nBuild #${{ github.run_number }}\"}" \
+        ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    # ❌ Slack Failure
+    - name: Slack Failure Notification
+      if: failure()
+      run: |
+        curl -X POST -H 'Content-type: application/json' \
+        --data "{\"text\":\"❌ FAILED: Angular CI-CD Pipeline\nBuild #${{ github.run_number }}\"}" \
+        ${{ secrets.SLACK_WEBHOOK_URL }}
