@@ -48,7 +48,8 @@ jobs:
         SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
       with:
         args: >
-          -Dsonar.projectKey=blogger-frontend
+          -Dsonar.projectKey=DevOpsBahadurKhan_cloudwings-devops-angular-project
+          -Dsonar.organization=devopsbahadurkhan
           -Dsonar.sources=.
 
     # 🐳 Docker Login
