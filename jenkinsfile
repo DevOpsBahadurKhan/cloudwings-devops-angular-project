@@ -7,6 +7,7 @@ pipeline {
         IMAGE_NAME = "${DOCKERHUB_USER}/${APP_NAME}"
     }
 
+
     stages {
 
         // 🔥 Clean
